@@ -6,7 +6,6 @@ from pymongo import MongoClient
 import pandas as pd
 
 # STEP 1: Scrap posts for a tag
-arr = []
 end_cursor = ''  # empty for the 1st page
 
 with open('./conf.json', 'r') as f:
@@ -25,6 +24,7 @@ else:
 
 
 for i in range(0, conf['page_count']):
+    arr = []
     url = "https://www.instagram.com/explore/tags/{0}/?__a=1&max_id={1}".format(
         conf['tag'], end_cursor)
     r = requests.get(url)
@@ -40,18 +40,17 @@ for i in range(0, conf['page_count']):
 
     time.sleep(2)  # insurence to not reach a time limit
 
+    for item in arr:
+        shortcode = item['shortcode']
+        url = "https://www.instagram.com/p/{0}/?__a=1".format(shortcode)
+
+        r = requests.get(url)
+        try:
+            data = json.loads(r.text)
+            df = pd.io.json.json_normalize(data, sep='_')
+            data = df.to_dict(orient='records')[0]
+            collection.insert_one(data)
+        except:
+            pass
+
 print(end_cursor)  # save this to restart parsing with the next page
-
-
-for item in arr:
-    shortcode = item['shortcode']
-    url = "https://www.instagram.com/p/{0}/?__a=1".format(shortcode)
-
-    r = requests.get(url)
-    try:
-        data = json.loads(r.text)
-        df = pd.io.json.json_normalize(data, sep='_')
-        data = df.to_dict(orient='records')[0]
-        collection.insert_one(data)
-    except:
-        pass
