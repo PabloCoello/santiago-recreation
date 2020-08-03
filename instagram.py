@@ -4,6 +4,14 @@ import json
 import re
 from pymongo import MongoClient
 import pandas as pd
+import datetime
+
+
+def format_data(data):
+    data = data['graphql']['shortcode_media']
+    data['taken_at_timestamp'] = datetime.datetime.fromtimestamp(
+        int(data['taken_at_timestamp']))
+    return data
 
 # STEP 1: Scrap posts for a tag
 end_cursor = ''  # empty for the 1st page
@@ -47,9 +55,7 @@ for i in range(0, conf['page_count']):
         r = requests.get(url)
         try:
             data = json.loads(r.text)
-            df = pd.io.json.json_normalize(data, sep='_')
-            data = df.to_dict(orient='records')[0]
-            collection.insert_one(data)
+            collection.insert_one(format_data(data))
         except:
             pass
 
