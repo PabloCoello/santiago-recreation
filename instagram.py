@@ -5,6 +5,7 @@ import re
 from pymongo import MongoClient
 import pandas as pd
 import datetime
+import progressbar
 
 
 def format_data(data):
@@ -31,7 +32,7 @@ else:
     print('invalid database name')
 
 
-for i in range(0, conf['page_count']):
+for i in progressbar.progressbar(range(0, conf['page_count'])):
     arr = []
     url = "https://www.instagram.com/explore/tags/{0}/?__a=1&max_id={1}".format(
         conf['tag'], end_cursor)
@@ -43,20 +44,21 @@ for i in range(0, conf['page_count']):
     # list with posts
     edges = data['graphql']['hashtag']['edge_hashtag_to_media']['edges']
 
-    for item in edges:
-       arr.append(item['node'])
+    if len(edges) > 0:
+        for item in edges:
+            arr.append(item['node'])
 
-    time.sleep(2)  # insurence to not reach a time limit
+        time.sleep(2)  # insurence to not reach a time limit
 
-    for item in arr:
-        shortcode = item['shortcode']
-        url = "https://www.instagram.com/p/{0}/?__a=1".format(shortcode)
+        for item in arr:
+            shortcode = item['shortcode']
+            url = "https://www.instagram.com/p/{0}/?__a=1".format(shortcode)
 
-        r = requests.get(url)
-        try:
-            data = json.loads(r.text)
-            collection.insert_one(format_data(data))
-        except:
-            pass
+            r = requests.get(url)
+            try:
+                data = json.loads(r.text)
+                collection.insert_one(format_data(data))
+            except:
+                pass
 
 print(end_cursor)  # save this to restart parsing with the next page
