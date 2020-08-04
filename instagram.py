@@ -18,9 +18,11 @@ def format_data(data):
         int(data['taken_at_timestamp']))
     return data
 
+
 def format_location(data, geolocator):
     dt = json.loads(data['location']['address_json'])
-    geocode = partial(geolocator.geocode,  country_codes=dt['country_code'], geometry='geojson')
+    geocode = partial(geolocator.geocode,
+                      country_codes=dt['country_code'], geometry='geojson')
     loc = geocode(query=dt["city_name"])
     data['geometry'] = loc.raw['geojson']
     data['nominatin'] = loc.raw
@@ -29,12 +31,12 @@ def format_location(data, geolocator):
     time.sleep(1.1)
     return data
 
-# STEP 1: Scrap posts for a tag
-end_cursor = ''  # empty for the 1st page
-geolocator = Nominatim(user_agent="pablo.coellopulido@usc.es")
 
 with open('./conf.json', 'r') as f:
     conf = json.load(f)
+
+geolocator = Nominatim(user_agent="pablo.coellopulido@usc.es")
+end_cursor = conf['end_cursor']
 
 if re.search(' ', conf['database']) is None and len(conf['database']) < 20:
     if re.search(' ', conf['collection']) is None and len(conf['collection']) < 20:
@@ -62,7 +64,7 @@ for i in progressbar.progressbar(range(0, conf['page_count'])):
     edges = data['graphql']['hashtag']['edge_hashtag_to_media']['edges']
 
     time.sleep(2)  # insurence to not reach a time limit
-    
+
     if len(edges) > 0:
         for item in edges:
             arr.append(item['node'])
@@ -76,10 +78,13 @@ for i in progressbar.progressbar(range(0, conf['page_count'])):
                 data = json.loads(r.text)
                 data = format_data(data)
                 if len(data['location']['address_json']) > 0:
-                    data = format_location(data, geolocator) 
+                    data = format_location(data, geolocator)
                     collection.insert_one(data)
             except:
                 pass
-
-print(end_cursor)
 client.close()
+
+
+conf['end_cursor'] = end_cursor
+with open('conf.json', 'w') as outfile:
+    json.dump(conf, outfile)
