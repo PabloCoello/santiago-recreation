@@ -2,6 +2,6 @@
     "database": "instagram",
     "collection": "CaminoDeSantiago",
     "tag": "caminodesantiago",
-    "page_count": 10,
+    "page_count": 50,
     "end_cursor": ""
 }
